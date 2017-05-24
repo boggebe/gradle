@@ -37,7 +37,7 @@ import org.gradle.initialization.DefaultParallelismConfiguration
 import org.gradle.internal.Factories
 import org.gradle.internal.concurrent.ExecutorFactory
 import org.gradle.internal.concurrent.ParallelExecutionManager
-import org.gradle.internal.concurrent.StoppableExecutor
+import org.gradle.internal.concurrent.ManagedExecutor
 import org.gradle.internal.event.DefaultListenerManager
 import org.gradle.internal.operations.TestBuildOperationExecutor
 import org.gradle.internal.resources.DefaultResourceLockCoordinationService
@@ -62,7 +62,7 @@ class DefaultTaskGraphExecuterSpec extends Specification {
 
     def setup() {
         parentWorkerLease = workerLeases.getWorkerLease().start()
-        _ * executorFactory.create(_) >> Mock(StoppableExecutor)
+        _ * executorFactory.create(_) >> Mock(ManagedExecutor)
         _ * executer.execute(_, _, _) >> { args ->
             executedTasks << args[0]
         }
