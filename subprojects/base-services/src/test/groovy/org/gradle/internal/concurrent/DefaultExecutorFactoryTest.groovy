@@ -430,4 +430,69 @@ class DefaultExecutorFactoryTest extends ConcurrentSpec {
         def ex = thrown(RuntimeException)
         ex.is(failure1)
     }
+
+    def "resizing fixed pool size adjusts underlying thread pool executor"() {
+        given:
+        def action1 = {
+            instant.started1
+            thread.block()
+            instant.completed1
+        }
+        def action2 = {
+            instant.started2
+            thread.blockUntil.started3
+        }
+        def action3 = {
+            instant.started3
+        }
+
+        when:
+        def executor = factory.create('test', 3)
+        executor.setFixedPoolSize(2)
+        executor.execute(action1)
+        executor.execute(action2)
+        executor.execute(action3)
+        thread.blockUntil.started3
+
+        then:
+        instant.started3 > instant.completed1
+        instant.started3 > instant.started2
+
+        cleanup:
+        executor?.stop()
+    }
+
+    def "can resize fixed pool while actions are running"() {
+        given:
+        def action1 = {
+            thread.block()
+            instant.started1
+            thread.blockUntil.started3
+        }
+        def action2 = {
+            thread.block()
+            instant.started2
+            thread.blockUntil.started3
+        }
+        def action3 = {
+            instant.started3
+        }
+
+        when:
+        def executor = factory.create('test', 2)
+        executor.execute(action1)
+        executor.execute(action2)
+        executor.execute(action3)
+        thread.blockUntil.started1
+        thread.blockUntil.started2
+        executor.setFixedPoolSize(3)
+        thread.blockUntil.started3
+
+        then:
+        instant.started3 > instant.started1
+        instant.started3 > instant.started2
+
+        cleanup:
+        executor?.stop()
+    }
 }
